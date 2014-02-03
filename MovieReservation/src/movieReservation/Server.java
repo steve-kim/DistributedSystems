@@ -26,7 +26,7 @@ public class Server {
 	
 	//UDP and TCP will be launched on separate threads
 	public void startServer() {
-		
+		udp.run();
 	}
 	
 	//UDP Thread code
@@ -46,23 +46,28 @@ public class Server {
 		public void run() {
 			// TODO Auto-generated method stub
 	        byte[] receiveData = new byte[1024];
+	        //byte[] bufferedReceive = new byte[1024];
 	        byte[] sendData = new byte[1024];
 	        String result = null;
 	        
 	        try {
 		        while(true)
 		        {
+		        	System.out.println("WAITING FOR SHIT TO COME IN!!!");
 		        	DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 		        	ds.receive(receivePacket);
+		        	System.out.println("GOT THIS SHIT!!!!");
 		        	//Receive IPAddress and port of connected client
 		        	InetAddress IPAddress = receivePacket.getAddress();
 		        	int port = receivePacket.getPort();
 		        	
 		        	//Receive data from connected client
-		        	String command = new String( receivePacket.getData());
+		        	//String command = new String( receivePacket.getData());
+		        	String command = new String(receivePacket.getData(), receivePacket.getOffset(), receivePacket.getLength());
 		        	
+		        	System.out.println("FUCKER SAID THIS: " + command);
 		        	String[] elements = command.split(" ");
-		        	
+		        	System.out.println("WHAT THE FUCK DO I DO WITH THIS?!?!");
 		        	//We will now call the functions to handle the commands
 		        	if (elements[0].equals("reserve")) {
 		        		result = theater.reserveSeat(elements[1]);
@@ -86,6 +91,7 @@ public class Server {
 		        		result = theater.delete(elements[1]);
 		        	}
 		        	
+		        	System.out.println("GET THE HELL OUT OF HERE!");
 		        	//Send results back to client
 		            sendData = result.getBytes();
 		            DatagramPacket sendPacket = 

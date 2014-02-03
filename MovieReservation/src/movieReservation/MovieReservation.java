@@ -17,7 +17,7 @@ public class MovieReservation {
 				for (int i=0; i<args.length; i++) {
 					if (args[i].equals("-s")) {
 						theaterCapacity = args[i+1];
-						System.out.println("Theater has " + theaterCapacity + "seats");
+						System.out.println("Theater has " + theaterCapacity + " seats");
 					}
 						
 					if (args[i].equals("-p")){
@@ -29,6 +29,7 @@ public class MovieReservation {
 				
 				//Create new Server object
 				Server movieServer = new Server(theaterCapacity, portNumber);
+				movieServer.startServer();
 			}
 			
 			//Running as a client

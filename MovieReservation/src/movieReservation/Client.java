@@ -46,10 +46,10 @@ public class Client {
 				DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, portNumber);
 				clientSocket.send(sendPacket);
 				//Receive data from Server
-				//DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-				//clientSocket.receive(receivePacket);
-				//String response = new String(receivePacket.getData());
-				//System.out.println(response);
+				DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+				clientSocket.receive(receivePacket);
+				String response = new String(receivePacket.getData(), receivePacket.getOffset(), receivePacket.getLength());
+				System.out.println(response);
 				clientSocket.close();
 				System.out.println("WHILE LOOP IS FINISHED BITCH!!!");
 			}

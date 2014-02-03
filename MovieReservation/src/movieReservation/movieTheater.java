@@ -9,6 +9,9 @@ public class movieTheater {
 	public movieTheater(int size) {
 		seatingChart = new String[size];
 		capacity = size;
+		
+		for (int i=0; i<capacity; i++)
+			seatingChart[i] = null;
 	}
 	
 	public String reserveSeat(String name) {
@@ -21,9 +24,11 @@ public class movieTheater {
 			capacity = capacity - 1;
 			//We will assign the first null element as the seat
 			for (int seat=0; seat<seatingChart.length; seat++) {
-				if (seatingChart[seat] != null)
+				if (seatingChart[seat] == null) {
+					seatingChart[seat] = name;
 					result = "Seat assigned to you is " + Integer.toString(seat);
-				break;
+					break;	
+				}				
 			}
 		}
 		else {
@@ -62,7 +67,7 @@ public class movieTheater {
 	//Returns -1 if name is not in the array
 	public int search(String name) {
 		for (int seat=0; seat<seatingChart.length; seat++) {
-			if (seatingChart[seat].equals(name))
+			if ((seatingChart[seat] != null) && (seatingChart[seat].equals(name)))
 				return seat;				
 		}
 		
