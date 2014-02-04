@@ -1,7 +1,11 @@
 package movieReservation;
 
+import java.util.concurrent.Semaphore;
+
 public class movieTheater {
 
+	private static final int MAX_AVAILABLE = 1;
+	private final Semaphore available = new Semaphore(MAX_AVAILABLE, true);
 	private String[] seatingChart = null;
 	private int capacity;
 	
@@ -14,8 +18,9 @@ public class movieTheater {
 			seatingChart[i] = null;
 	}
 	
-	public String reserveSeat(String name) {
+	public synchronized String reserveSeat(String name) {
 		String result = null;
+		
 		//Check if theater is empty
 		if (capacity == 0)
 			result = "Sold out - No seat available";
@@ -38,7 +43,7 @@ public class movieTheater {
 		return result;
 	}
 	
-	public String bookSeat(String name, int seat) {
+	public synchronized String bookSeat(String name, int seat) {
 		String result = null;
 		
 		//First check to see if theater is empty
@@ -47,7 +52,7 @@ public class movieTheater {
 		
 		//Check to see if the requested seat number is available
 		if (seatingChart[seat] != null)
-			return (Integer.toString(seat) + "is not available");
+			return (Integer.toString(seat) + " is not available");
 		
 		//Make sure the person has not already booked a seat
 		if (search(name) == -1) {
@@ -65,7 +70,7 @@ public class movieTheater {
 	
 	//Returns the index of the array where name was found
 	//Returns -1 if name is not in the array
-	public int search(String name) {
+	public synchronized int search(String name) {
 		for (int seat=0; seat<seatingChart.length; seat++) {
 			if ((seatingChart[seat] != null) && (seatingChart[seat].equals(name)))
 				return seat;				
@@ -75,7 +80,7 @@ public class movieTheater {
 		return -1;
 	}
 	
-	public String delete(String name) {
+	public synchronized String delete(String name) {
 		String result = null;
 		int seatNumber = 0;
 		
