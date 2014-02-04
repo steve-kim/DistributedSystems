@@ -84,6 +84,7 @@ public class movieTheater {
 		//Any number other than -1 is the seat number to be released
 		if (seatNumber != -1) {
 			result = "Seat released is " + Integer.toString(seatNumber);
+			seatingChart[seatNumber] = null;
 			capacity = capacity + 1;
 		}
 		else
