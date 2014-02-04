@@ -1,7 +1,6 @@
 package movieReservation;
 
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -10,30 +9,36 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Server {
 	
+	private int poolSize = 2;
 	private int capacity;
 	private int portNumber;
 	private movieTheater theater;
+	private final ExecutorService pool;
 	private UDPThread udp = null;
 	private TCPThread tcp = null;
 		
 	public Server (String capacity, String portNumber) {
 		this.capacity = Integer.parseInt(capacity);
 		this.portNumber = Integer.parseInt(portNumber);
-		//udp = new UDPThread();
+		udp = new UDPThread();
 		tcp = new TCPThread();
 	
+		pool = Executors.newFixedThreadPool(poolSize);
+		
 		theater = new movieTheater(this.capacity);
 	}
 	
 	//UDP and TCP will be launched on separate threads
 	public void startServer() {
-		//System.out.println("Starting UDP Thread");
-		//udp.run();
+		System.out.println("Starting UDP Thread");
+		pool.execute(udp);
 		System.out.println("Starting TCP Thread");
-		tcp.run();
+		pool.execute(tcp);
 	}
 	
 	//UDP Thread code
@@ -60,9 +65,7 @@ public class Server {
 	        try {
 		        while(true)
 		        {
-		        	//System.out.println("WAITING FOR UDP SHIT TO COME IN!!!");
-		        	//System.out.println(ds.getLocalAddress().toString());
-		        	//System.out.println(ds.getInetAddress().toString());
+		        	System.out.println("WAITING FOR UDP SHIT TO COME IN!!!");
 		        	DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 		        	ds.receive(receivePacket);
 		        	System.out.println("GOT THIS UDP SHIT!!!!");
@@ -71,7 +74,6 @@ public class Server {
 		        	int port = receivePacket.getPort();
 		        	
 		        	//Receive data from connected client
-		        	//String command = new String( receivePacket.getData());
 		        	String command = new String(receivePacket.getData(), receivePacket.getOffset(), receivePacket.getLength());
 		        	
 		        	System.out.println("FUCKER SAID THIS: " + command);
@@ -110,6 +112,7 @@ public class Server {
 	        } catch (IOException e) {
 	        	e.printStackTrace();
 	        }
+	        
 		}
 	}
 	
