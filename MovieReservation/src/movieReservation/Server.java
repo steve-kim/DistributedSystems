@@ -63,10 +63,8 @@ public class Server {
 	        try {
 		        while(true)
 		        {
-		        	//System.out.println("WAITING FOR UDP SHIT TO COME IN!!!");
 		        	DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 		        	ds.receive(receivePacket);
-		        	//System.out.println("GOT THIS UDP SHIT!!!!");
 		        	//Receive IPAddress and port of connected client
 		        	InetAddress IPAddress = receivePacket.getAddress();
 		        	int port = receivePacket.getPort();
@@ -74,9 +72,7 @@ public class Server {
 		        	//Receive data from connected client
 		        	String command = new String(receivePacket.getData(), receivePacket.getOffset(), receivePacket.getLength());
 		        	
-		        	//System.out.println("FUCKER SAID THIS: " + command);
 		        	String[] elements = command.split(" ");
-		        	//System.out.println("WHAT THE FUCK DO I DO WITH THIS?!?!");
 		        	//We will now call the functions to handle the commands
 		        	if (elements[0].equals("reserve")) {
 		        		result = theater.reserveSeat(elements[1]);
@@ -100,7 +96,6 @@ public class Server {
 		        		result = theater.delete(elements[1]);
 		        	}
 		        	
-		        	System.out.println("GET THE HELL OUT OF HERE!");
 		        	//Send results back to client
 		            sendData = result.getBytes();
 		            DatagramPacket sendPacket = 
@@ -136,26 +131,17 @@ public class Server {
 			
 			try {
 				while(true) {
-					//System.out.println("WAITING FOR TCP SHIT TO COME IN!!!");
-					//System.out.println(ss.getInetAddress().toString());
-					//System.out.println(ss.getLocalPort());
 					//TCP connections return a new proxy socket to handle connections
 					Socket connectionSocket = ss.accept();
-					//System.out.println("Connected: " + connectionSocket.getRemoteSocketAddress());
 					//Create input/output streams for communicating with Client
 					BufferedReader inFromClient = 
 							new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
 					//DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
 					PrintWriter outToClient = new PrintWriter(connectionSocket.getOutputStream(), true);
 					//Receive data from Client
-					//System.out.println("Preparing to receive");
 					while(!inFromClient.ready()) {}
-					//System.out.println("Ready to receive");
 					fromClient = inFromClient.readLine();
-					//System.out.println("GOT THIS TCP SHIT!!!!");
-					//System.out.println("FUCKER SAID THIS: " + fromClient);
 					String[] elements = fromClient.split(" ");
-					//System.out.println("WHAT THE FUCK DO I DO WITH THIS?!?!");
 					
 					//We will now call the functions to handle the commands
 		        	if (elements[0].equals("reserve")) {
@@ -180,7 +166,6 @@ public class Server {
 		        		result = theater.delete(elements[1]);
 		        	}
 		        	
-		        	//System.out.println("GET THE HELL OUT OF HERE!");
 		        	//Send the results back to client
 		        	outToClient.flush();
 		        	outToClient.println(result);

@@ -17,12 +17,12 @@ public class MovieReservation {
 				for (int i=0; i<args.length; i++) {
 					if (args[i].equals("-s")) {
 						theaterCapacity = args[i+1];
-						System.out.println("Theater has " + theaterCapacity + " seats");
+						//System.out.println("Theater has " + theaterCapacity + " seats");
 					}
 						
 					if (args[i].equals("-p")){
 						portNumber = args[i+1];
-						System.out.println("Port Number: " + portNumber);
+						//System.out.println("Port Number: " + portNumber);
 					}
 						
 				}
@@ -43,22 +43,22 @@ public class MovieReservation {
 					//user selects UDP
 					if (args[i].equals("-u")) {
 						protocol = "u";
-						System.out.println("Set client to use UDP");
+						//System.out.println("Set client to use UDP");
 					}
 					//user selects TCP
 					if (args[i].equals("-t")) {
 						protocol = "t";
-						System.out.println("Set client to use TCP");
+						//System.out.println("Set client to use TCP");
 					}
 					//user IP Address
 					if (args[i].equals("-ip")) {
 						ipAddress = args[i+1];
-						System.out.println("IP Address: " + ipAddress);
+						//System.out.println("IP Address: " + ipAddress);
 					}
 					//user Port Number
 					if (args[i].equals("-p")) {
 						portNumber = args[i+1];	
-						System.out.println("Port Number: " + portNumber);
+						//System.out.println("Port Number: " + portNumber);
 					}				
 				}
 				

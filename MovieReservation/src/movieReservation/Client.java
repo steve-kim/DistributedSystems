@@ -31,22 +31,18 @@ public class Client {
 	}
 	
 	public void startClient() {
-		System.out.println("CLIENT HAS STARTED MOTHERFUCKER!!!!!");
 		try {
 			while (true) {
 				//UDP protocol
 				if (protocol.equals("u")) {
-					System.out.println("STARTING THE GOD DAMN UDP WHILE LOOP!!!");
 					//Read input from User
 					BufferedReader inFromUser =
 					         new BufferedReader(new InputStreamReader(System.in));
 					DatagramSocket clientSocket = new DatagramSocket();
 					String input = inFromUser.readLine();
-					System.out.println("ASSHOLE INPUTED: " + input);
 					sendData = input.getBytes();
 					//Send user input to Server for processing
 					InetAddress IPAddress = InetAddress.getByName("localhost");
-					System.out.println("SENDING THIS SHIT!!!");
 					DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, portNumber);
 					clientSocket.send(sendPacket);
 					//Receive data from Server
@@ -55,13 +51,12 @@ public class Client {
 					String response = new String(receivePacket.getData(), receivePacket.getOffset(), receivePacket.getLength());
 					System.out.println(response);
 					clientSocket.close();
-					System.out.println("WHILE LOOP IS FINISHED BITCH!!!");
 				}
 				//TCP Protocol
 				else if (protocol.equals("t")) {
-					System.out.println("STARTING THE GOD DAMN TCP WHILE LOOP!!!");
 					//Create TCP Socket to communicate with Server
-					Socket clientSocket = new Socket("localhost", portNumber);
+					//Socket clientSocket = new Socket("localhost", portNumber);
+					Socket clientSocket = new Socket(ipAddress, portNumber);
 					//Create handles for Input/Output
 					PrintWriter outToServer = new PrintWriter(clientSocket.getOutputStream(), true);
 					BufferedReader inFromServer = 
@@ -69,16 +64,15 @@ public class Client {
 					BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
 					//Get input from console
 					String input = inFromUser.readLine();
-					System.out.println("ASSHOLE INPUTED: " + input);
-					System.out.println("SENDING THIS SHIT!!!");
+
 					//Send data to server
 					outToServer.flush();
 					outToServer.println(input);
-					System.out.println("FINISHED SENDING!!!");
+
+					//Receive response from server
 					String response = inFromServer.readLine();
 					System.out.println(response);
 					clientSocket.close();
-					System.out.println("WHILE LOOP IS FINISHED BITCH!!!");
 				}
 	
 			}

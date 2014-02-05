@@ -25,7 +25,7 @@ public class movieTheater {
 		if (capacity == 0)
 			result = "Sold out - No seat available";
 		
-		if (search(name) == -1) {
+		else if (search(name) == -1) {
 			capacity = capacity - 1;
 			//We will assign the first null element as the seat
 			for (int seat=0; seat<seatingChart.length; seat++) {
@@ -48,7 +48,10 @@ public class movieTheater {
 		
 		//First check to see if theater is empty
 		if (capacity == 0)
-			result = "Sold out - No seat available";
+			return "Sold out - No seat available";
+		
+		if (seat >= capacity)
+			return (Integer.toString(seat) + " is not available");
 		
 		//Check to see if the requested seat number is available
 		if (seatingChart[seat] != null)
