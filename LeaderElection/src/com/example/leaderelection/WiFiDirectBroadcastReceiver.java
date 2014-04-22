@@ -1,5 +1,7 @@
 package com.example.leaderelection;
 
+import java.util.ArrayList;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -10,8 +12,6 @@ import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
 import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
 import android.util.Log;
-import android.view.View;
-import android.widget.Toast;
 
 /**
  * A BroadcastReceiver that notifies of important Wi-Fi p2p events.
@@ -22,7 +22,10 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
     private WifiP2pManager mManager;
     private Channel mChannel;
     private MainActivity mActivity;
-	private WifiP2pConfig mConfig = new WifiP2pConfig();
+    
+    private WifiP2pConfig mConfig = new WifiP2pConfig();
+	
+	private ArrayList<WifiP2pDevice> devices = new ArrayList<WifiP2pDevice>();
 
     PeerListListener myPeerListListener;
     
@@ -34,14 +37,14 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
         this.mActivity = activity;
         
         this.myPeerListListener = new PeerListListener() {
-        	@Override
-        	public void onPeersAvailable(WifiP2pDeviceList peers) {
-        		Log.d("STATE", "P2P Peers Available");
-        		for (WifiP2pDevice device : peers.getDeviceList()) {
-        			Log.d("STATE", "Device " + device.deviceName + " discovered");
-        			mConfig.deviceAddress = device.deviceAddress;
-        		}
-        	}
+            @Override
+            public void onPeersAvailable(WifiP2pDeviceList peers) {
+            	Log.d("STATE", "P2P Peers Available");
+            	for (WifiP2pDevice device : peers.getDeviceList()) {
+            		Log.d("STATE", "Device " + device.deviceName + " discovered");
+            		mConfig.deviceAddress = device.deviceAddress;
+            	}
+            }
         };
     }
 
@@ -76,5 +79,13 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
         } else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)) {
             // Respond to this device's wifi state changing
         }
+    }
+    
+    public WifiP2pConfig getWifiP2pConfig() {
+    	return mConfig;
+    }
+    
+    public ArrayList<WifiP2pDevice> getWifiDevices() {
+    	return devices;
     }
 }
