@@ -33,16 +33,15 @@ import android.view.ViewGroup;
 import android.widget.Button;
 
 public class MainActivity extends Activity {
-	private final String TAG = "MainActivity";
+	private final static String TAG = "MainActivity";
 	
 	static WifiP2pManager mManager;
 	static Channel mChannel;
 	static BroadcastReceiver mReceiver;
 	IntentFilter mIntentFilter;
-	private static WifiP2pConfig mConfig = null;
-	private static ConnectionActionListener connectionListener;
+	private static WifiP2pConfig mConfig = new WifiP2pConfig();
 	
-	private ArrayList<WifiP2pDevice> devices = new ArrayList<WifiP2pDevice>();
+	private static ArrayList<WifiP2pDevice> devices = new ArrayList<WifiP2pDevice>();
 	private static Button mConnectButton;
 	
 //    private ServerThread serverThread;
@@ -58,19 +57,15 @@ public class MainActivity extends Activity {
 					.add(R.id.container, new PlaceholderFragment()).commit();
 		}
 
-		Log.d(TAG,"CREATING THE SHIT WE NEED!!");
 	    mManager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
 	    mChannel = mManager.initialize(this, getMainLooper(), null);
 	    mReceiver = new WiFiDirectBroadcastReceiver(mManager, mChannel, this);
-	    connectionListener = new ConnectionActionListener();
-	    
-	    Log.d(TAG,"INTENTS BITCHES!!!!!");
+
 	    mIntentFilter = new IntentFilter();
 	    mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
 	    mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
 	    mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
 	    mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
-	    Log.d(TAG,"DONE WITH THIS!!!!");
 	    
 	    mManager.discoverPeers(mChannel, new WifiP2pManager.ActionListener() {
 	        @Override
@@ -90,7 +85,6 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onResume() {
 	    super.onResume();
-	    Log.d(TAG, "REGISTERING THE FUCKING RECEIVER!!!");
 	    registerReceiver(mReceiver, mIntentFilter);
 	    
 	}
@@ -101,20 +95,6 @@ public class MainActivity extends Activity {
 	    unregisterReceiver(mReceiver);
 	}
 	
-	class ConnectionActionListener implements ActionListener {
-
-		@Override
-		public void onSuccess() {
-			Log.d(TAG, "Connection Successful!");
-		}
-
-		@Override
-		public void onFailure(int reason) {
-			// TODO Auto-generated method stub
-			Log.d(TAG, "Connection Failed!");
-		}
-
-	}
 	
 	/**
 	 * A placeholder fragment containing a simple view.
@@ -137,20 +117,25 @@ public class MainActivity extends Activity {
 				@Override
 				public void onClick(View v) {
 					// TODO Auto-generated method stub
-					mConfig = ((WiFiDirectBroadcastReceiver) mReceiver).getWifiP2pConfig();
-				    mManager.connect(mChannel, mConfig, new ActionListener() {
-
-			            @Override
-			            public void onSuccess() {
-			                // WiFiDirectBroadcastReceiver will notify us. Ignore for now.
-			            	Log.d("STATE", "CONNECTION SUCCESS!");
-			            }
-
-			            @Override
-			            public void onFailure(int reason) {
-			                Log.d("STATE", "CONNECTION FAILED!");
-			            }
-			        });
+					//mConfig = ((WiFiDirectBroadcastReceiver) mReceiver).getWifiP2pConfig();
+					devices = ((WiFiDirectBroadcastReceiver) mReceiver).getWifiDevices();
+					for (WifiP2pDevice device : devices) {
+						mConfig.deviceAddress = device.deviceAddress;
+						Log.d(TAG, "CONNECTING TO: " + device.deviceName);
+					    mManager.connect(mChannel, mConfig, new ActionListener() {
+	
+				            @Override
+				            public void onSuccess() {
+				                // WiFiDirectBroadcastReceiver will notify us. Ignore for now.
+				            	Log.d("STATE", "CONNECTION SUCCESS!");
+				            }
+	
+				            @Override
+				            public void onFailure(int reason) {
+				                Log.d("STATE", "CONNECTION FAILED!");
+				            }
+				        });
+					}
 				}
 				
 			});
@@ -159,120 +144,4 @@ public class MainActivity extends Activity {
 		}
 	}
 	
-/*	class ClientThread extends Thread{
-		Socket socket;
-		InputStream inputStream;
-		OutputStream outputStream;
-		PrintWriter outToServer;
-		ObjectOutputStream objOutputStream;
-		String string = "mensagem de comunicacao";
-		private int port;
-		private String host;
-		private ObjectInputStream objInputStream;
-
-		public ClientThread(String host, int port) {
-			// TODO Auto-generated constructor stub
-			this.host = host;
-			this.port = port;
-		}
-		@Override
-		public void run() {
-			// TODO Auto-generated method stub
-			socket = new Socket();
-			try {
-				socket.bind(null);
-				socket.connect(new InetSocketAddress(host, port), 500);
-
-				outputStream = socket.getOutputStream();
-				outToServer = new PrintWriter(outputStream);
-				String input = "HELLO!!!";
-				Log.d("STATE", "client sends: " + string);
-				
-				//send to server
-				outToServer.flush();
-				outToServer.println(input);
-
-				inputStream = socket.getInputStream();
-				BufferedReader inFromServer = new BufferedReader(new InputStreamReader(inputStream));
-				String response = inFromServer.readLine();
-				Log.d(TAG, response);
-
-			} catch (IOException e) {
-				e.printStackTrace();
-			} 
-			finally {
-				if ( socket != null ) {
-					if ( socket.isConnected()) {
-						try {
-							socket.close();
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-					}
-				}
-			}
-
-		}
-
-	}
-
-	class ServerThread extends Thread{
-		ServerSocket serverSocket;
-		Socket client;
-		InputStream inputStream;
-		ObjectInputStream objInputStream ;
-		OutputStream outputStream;
-		ObjectOutputStream objOutputStream;
-		String string = "mensagem de comunicacao";
-
-		@Override
-		public void run() {
-			// TODO Auto-generated method stub
-			try {
-				serverSocket = new ServerSocket(8888);
-				client = serverSocket.accept();
-				BufferedReader inFromClient = new BufferedReader(new InputStreamReader(client.getInputStream()));
-				PrintWriter outToClient = new PrintWriter(client.getOutputStream(), true);
-				
-				while(!inFromClient.ready()) {}
-				String fromClient = inFromClient.readLine();
-				
-				//Send the results back to client
-	        	outToClient.flush();
-	        	outToClient.println("World!!!!");
-
-
-				serverSocket.close();
-
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} 
-		}
-
-	}
-
-	@Override
-	public void onConnectionInfoAvailable(WifiP2pInfo info) {
-		// TODO Auto-generated method stub
-		Log.d("STATE", "ConnectionInfo " + info.describeContents());
-		if (info.isGroupOwner) {
-			Log.d("STATE", "I am the MASTER! muahuaha");
-			createServerSocket();
-		} else {
-			createClientSocket(info);
-			Log.d("STATE", "Slave :~");
-		}
-	}
-	
-	private void createClientSocket(WifiP2pInfo info) {
-		clientThread = new ClientThread(info.groupOwnerAddress.getHostAddress(), 8888);
-		clientThread.start();
-	}
-
-	private void createServerSocket() {
-		serverThread = new ServerThread();
-		serverThread.start();
-	}*/
-
 }
