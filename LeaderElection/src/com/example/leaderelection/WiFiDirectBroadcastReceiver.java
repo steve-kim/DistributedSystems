@@ -4,14 +4,15 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -23,10 +24,8 @@ import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
-import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
 import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
 import android.util.Log;
-import android.widget.Toast;
 
 /**
  * A BroadcastReceiver that notifies of important Wi-Fi p2p events.
@@ -37,10 +36,11 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
     private WifiP2pManager mManager;
     private Channel mChannel;
     private MainActivity mActivity;
+    private static boolean serverStarted = false;
+    private static final ExecutorService executorService = Executors.newFixedThreadPool(10);
     
     private ServerThread serverThread;
 	private ClientThread clientThread;
-
     
     private WifiP2pConfig mConfig = new WifiP2pConfig();
 	
@@ -113,13 +113,16 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                 	public void onConnectionInfoAvailable(WifiP2pInfo info) {
                 		// TODO Auto-generated method stub
                 		Log.d("STATE", "ConnectionInfo " + info.describeContents());
-                		if (info.isGroupOwner) {
+                		if (info.isGroupOwner && !serverStarted) {
                 			Log.d("STATE", "I am the MASTER! muahuaha");
-                			createServerSocket();
-                		} else {
+                			createServerSocket(info);
+                		} else if (!serverStarted){
                 			createClientSocket(info);
                 			Log.d("STATE", "Slave :~");
                 		}
+                		
+                		//createServerSocket(info);
+                		
                 	}
 				});
             }
@@ -139,13 +142,9 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 	class ClientThread extends Thread{
 		Socket socket;
 		InputStream inputStream;
-		OutputStream outputStream;
 		PrintWriter outToServer;
-		ObjectOutputStream objOutputStream;
-		String string = "mensagem de comunicacao";
 		private int port;
 		private String host;
-		private ObjectInputStream objInputStream;
 
 		public ClientThread(String host, int port) {
 			// TODO Auto-generated constructor stub
@@ -160,9 +159,8 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 				socket.bind(null);
 				socket.connect(new InetSocketAddress(host, port), 500);
 
-				outputStream = socket.getOutputStream();
-				outToServer = new PrintWriter(outputStream);
-				String input = "HELLO!!!";
+				outToServer = new PrintWriter(socket.getOutputStream(), true);
+				String input = socket.getLocalAddress().getHostAddress();
 				Log.d("STATE", "client sends: " + input);
 				
 				//send to server
@@ -197,26 +195,35 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 		ServerSocket serverSocket;
 		Socket client;
 		InputStream inputStream;
-		ObjectInputStream objInputStream ;
-		OutputStream outputStream;
-		ObjectOutputStream objOutputStream;
-		String string = "mensagem de comunicacao";
-
+		SocketAddress bindAddress;
+		
+		public ServerThread(WifiP2pInfo info) {
+			bindAddress = new InetSocketAddress(info.groupOwnerAddress.getHostAddress(), 8888);
+			serverStarted = true;
+		}
+		
 		@Override
 		public void run() {
 			// TODO Auto-generated method stub
 			try {
-				serverSocket = new ServerSocket(35000);
+				serverSocket = new ServerSocket();
+				serverSocket.setReuseAddress(true);
+				serverSocket.bind(bindAddress);
+				String toClient = serverSocket.getInetAddress().getHostAddress() + ";" + serverSocket.getLocalPort();
+
+				Log.d("Socket", toClient);
+				
 				client = serverSocket.accept();
 				BufferedReader inFromClient = new BufferedReader(new InputStreamReader(client.getInputStream()));
 				PrintWriter outToClient = new PrintWriter(client.getOutputStream(), true);
 				
-				while(!inFromClient.ready()) {}
+				//while(!inFromClient.ready()) {}
 				String fromClient = inFromClient.readLine();
+				Log.d("Socket", fromClient);
 				
 				//Send the results back to client
 	        	outToClient.flush();
-	        	outToClient.println("World!!!!");
+	        	outToClient.println(toClient);
 
 
 				serverSocket.close();
@@ -232,13 +239,13 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 
 	
 	private void createClientSocket(WifiP2pInfo info) {
-		clientThread = new ClientThread(info.groupOwnerAddress.getHostAddress(), 35000);
-		clientThread.start();
+		clientThread = new ClientThread(info.groupOwnerAddress.getHostAddress(), 8888);
+		executorService.execute(clientThread);
 	}
 
-	private void createServerSocket() {
-		serverThread = new ServerThread();
-		serverThread.start();
+	private void createServerSocket(WifiP2pInfo info) {
+		serverThread = new ServerThread(info);
+		executorService.execute(serverThread);
 	}
     
 
