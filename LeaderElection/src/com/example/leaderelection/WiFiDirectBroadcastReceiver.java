@@ -35,10 +35,12 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 	
     private WifiP2pManager mManager;
     private Channel mChannel;
+    private BroadcastReceiver mReceiver;
     private MainActivity mActivity;
     
     private String localAddress;
     private static boolean serverStarted = false;
+    private static boolean connected = false;
     private static final ExecutorService executorService = Executors.newFixedThreadPool(10);
     
     private ServerThread serverThread;
@@ -47,7 +49,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
     private WifiP2pConfig mConfig = new WifiP2pConfig();
 	
 	private ArrayList<WifiP2pDevice> devices = new ArrayList<WifiP2pDevice>();
-	private ArrayList<String> networkAddresses = new ArrayList<String>();
+	private static ArrayList<String> networkAddresses = new ArrayList<String>();
 
     PeerListListener myPeerListListener;
     
@@ -63,10 +65,9 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
             public void onPeersAvailable(WifiP2pDeviceList peers) {
             	Log.d("STATE", "P2P Peers Available");
             	for (WifiP2pDevice device : peers.getDeviceList()) {
-            		Log.d("STATE", "Device " + device.deviceName + " discovered " + String.valueOf(device.status));
+            		//Log.d("STATE", "Device " + device.deviceName + " discovered " + String.valueOf(device.status));
             		if(!devices.contains(device))
             			devices.add(device);
-            		//mConfig.deviceAddress = device.deviceAddress;
             	}
             }
         };
@@ -117,22 +118,59 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                 	public void onConnectionInfoAvailable(WifiP2pInfo info) {
                 		// TODO Auto-generated method stub
                 		Log.d("STATE", "ConnectionInfo " + info.describeContents());
-                		if (info.isGroupOwner && !serverStarted) {
-                			Log.d("STATE", "I am the MASTER! muahuaha");
-                			createServerSocket(info, false);
+                		if (info.isGroupOwner) {
+                			if (!serverStarted) {
+                				Log.d("STATE", "I am the MASTER! muahuaha");
+                        		createServerSocket(info, false);
+                        		synchronizeNodes();
+                			}
                 		} else if (!serverStarted){
-                			createClientSocket(info);
+                			createClientSocket(info, "connecting");
                 			Log.d("STATE", "Slave :~");
                 			createServerSocket(info, true);
-                		}
+                			synchronizeNodes();
+                		} 
                 		
-                		//createServerSocket(info);
+                		//Log.d("STATE", "Synchronizing");
+            			//synchronizeNodes(info);
+                		
                 	}
 				});
+                
+                synchronizeNodes();   
             }
+            
+            
         } else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)) {
             // Respond to this device's wifi state changing
         }
+    }
+    
+    public void synchronizeNodes() {
+    	String allAddresses = "synchronize:";
+
+    	for (String network : networkAddresses)
+        	allAddresses = allAddresses + network + ":";	
+    	
+    	
+    	Log.d("Sync", "Synchronizing nodes");
+    	Log.d("Sync", allAddresses);
+    	
+    	for (String network : networkAddresses) {
+    		Log.d("Sync", "Sending to: " + network);
+    		ClientSynchronizeThread sync = new ClientSynchronizeThread(network, 8888, allAddresses);
+    		sync.start();
+    		try {
+				sync.join();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    	}
+    }
+    
+    public void synchronizeNodes(WifiP2pInfo info) {
+    	createClientSocket(info, "synchronizing");
     }
     
     public WifiP2pConfig getWifiP2pConfig() {
@@ -149,11 +187,14 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 		PrintWriter outToServer;
 		private int port;
 		private String host;
+		private String message;
+		private String input;
 
-		public ClientThread(String host, int port) {
+		public ClientThread(String host, int port, String message) {
 			// TODO Auto-generated constructor stub
 			this.host = host;
 			this.port = port;
+			this.message = message;
 		}
 		@Override
 		public void run() {
@@ -164,9 +205,18 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 				socket.connect(new InetSocketAddress(host, port), 500);
 				
 				outToServer = new PrintWriter(socket.getOutputStream(), true);
-				String input = socket.getLocalAddress().getHostAddress();
-				localAddress = input;
-				Log.d("STATE", "client sends: " + localAddress);
+				
+				if (message.equals("connecting")) {
+					input = socket.getLocalAddress().getHostAddress();
+					localAddress = input;
+					connected = true;
+				}
+				else if (message.equals("synchronizing")) {
+					input = "synchronize";
+				}
+				
+				Log.d("STATE", "client sends: " + input);
+				
 				
 				//send to server
 				outToServer.flush();
@@ -176,7 +226,65 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 				BufferedReader inFromServer = new BufferedReader(new InputStreamReader(inputStream));
 				String response = inFromServer.readLine();
 				Log.d("Response", response);
-				networkAddresses.add(response);
+				//networkAddresses.add(response);
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			} 
+			finally {
+				if ( socket != null ) {
+					if ( socket.isConnected()) {
+						try {
+							socket.close();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			}
+
+		}
+
+	}
+	
+	class ClientSynchronizeThread extends Thread{
+		Socket socket;
+		InputStream inputStream;
+		PrintWriter outToServer;
+		private int port;
+		private String host;
+		private String allAddresses;
+		private String input;
+
+		public ClientSynchronizeThread(String host, int port, String allAddresses) {
+			// TODO Auto-generated constructor stub
+			this.host = host;
+			this.port = port;
+			this.allAddresses = allAddresses;
+		}
+		
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+			socket = new Socket();
+			try {
+				socket.bind(null);
+				socket.connect(new InetSocketAddress(host, port), 500);
+				
+				outToServer = new PrintWriter(socket.getOutputStream(), true);
+				
+				Log.d("STATE", "client sends: " + input);
+				
+				
+				//send to server
+				outToServer.flush();
+				outToServer.println(allAddresses);
+
+				inputStream = socket.getInputStream();
+				BufferedReader inFromServer = new BufferedReader(new InputStreamReader(inputStream));
+				String response = inFromServer.readLine();
+				Log.d("Response", response);
+				//networkAddresses.add(response);
 
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -225,8 +333,8 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 						bindAddress = new InetSocketAddress(localAddress, 8888);
 					
 					serverSocket.bind(bindAddress);
-					toClient = ((InetSocketAddress) bindAddress).getAddress().getHostAddress();
-					Log.d("ServerThread", "SERVER STARTED: " + toClient);
+					toClient = "";
+					Log.d("ServerThread", "SERVER STARTED: " + ((InetSocketAddress) bindAddress).getAddress().getHostAddress());
 				
 					client = serverSocket.accept();
 					
@@ -236,11 +344,21 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 					//while(!inFromClient.ready()) {}
 					String fromClient = inFromClient.readLine();
 					Log.d("From Client", fromClient);
-					
+
+					if (fromClient.contains("synchronize")) {
+						Log.d("ServerThread", fromClient);
+					}
+					else {
+						synchronized (this) {
+							networkAddresses.add(fromClient);	
+						}
+						toClient = ((InetSocketAddress) bindAddress).getAddress().getHostAddress();
+					}
+										
 					//Send the results back to client
 		        	outToClient.flush();
 		        	outToClient.println(toClient);
-
+		        	
 		        	serverSocket.close();
 				}				
 			} catch (IOException e) {
@@ -253,8 +371,8 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 
 
 	
-	private void createClientSocket(WifiP2pInfo info) {
-		clientThread = new ClientThread(info.groupOwnerAddress.getHostAddress(), 8888);
+	private void createClientSocket(WifiP2pInfo info, String message) {
+		clientThread = new ClientThread(info.groupOwnerAddress.getHostAddress(), 8888, message);
 		//executorService.execute(clientThread);
 		clientThread.start();
 		try {
@@ -263,12 +381,11 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		Log.d("GLOBAL", "LocalAddress: " + localAddress);
 	}
 
 	private void createServerSocket(WifiP2pInfo info, boolean slave) {
 		serverThread = new ServerThread(info, slave);
-		executorService.execute(serverThread);
+		serverThread.start();
 	}
     
 

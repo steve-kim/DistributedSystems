@@ -70,12 +70,12 @@ public class MainActivity extends Activity {
 	    mManager.discoverPeers(mChannel, new WifiP2pManager.ActionListener() {
 	        @Override
 	        public void onSuccess() {
-	        	Log.d(TAG, "DISCOVERED PEERS BITCHES!!!!");
+	        	//Log.d(TAG, "DISCOVERED PEERS BITCHES!!!!");
 	        }
 
 	        @Override
 	        public void onFailure(int reasonCode) {
-	        	Log.d(TAG, "FUUUUUUCK!!!!!!!");
+	        	//Log.d(TAG, "FUUUUUUCK!!!!!!!");
 	        }
 	    });
 		
