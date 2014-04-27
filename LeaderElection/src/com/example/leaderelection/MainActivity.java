@@ -137,6 +137,7 @@ public class MainActivity extends Activity {
 					if (minDevicesConnected || ((WiFiDirectBroadcastReceiver) mReceiver).getSlaveStatus()) {
 						//We now jump to the meat of the application
 						Intent intent = new Intent(getActivity(), Leaderboard.class);
+						ArrayList<String> blah = ((WiFiDirectBroadcastReceiver) mReceiver).getNetworkAddresses();
 						intent.putStringArrayListExtra("networkAddresses", (ArrayList<String>)((WiFiDirectBroadcastReceiver) mReceiver).getNetworkAddresses());
 						startActivity(intent);
 					}

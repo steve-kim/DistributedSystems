@@ -10,6 +10,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -126,7 +127,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                 			slaveConnection = true;
                 			createClientSocket(info, "connecting");
                 			Log.d("STATE", "Slave :~");
-                			executorService.execute(new createServerSocketThread(info, false));
+                			executorService.execute(new createServerSocketThread(info, true));
                 		} 
                 		
                 	}
@@ -153,7 +154,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
     	
     	for (String network : networkAddresses) {
     		Log.d("Sync", "Sending to: " + network);
-    		ClientSynchronizeThread sync = new ClientSynchronizeThread(network, 8888, allAddresses);
+    		ClientSynchronizeThread sync = new ClientSynchronizeThread(network, 45000, allAddresses);
     		//executorService.execute(sync);
     		sync.start();
     		try {
@@ -274,6 +275,12 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 			// TODO Auto-generated method stub
 			socket = new Socket();
 			try {
+				socket.setReuseAddress(true);
+			} catch (SocketException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			try {
 				socket.bind(null);
 				socket.connect(new InetSocketAddress(host, port), 500);
 				
@@ -320,7 +327,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 		
 		public ServerThread(WifiP2pInfo info, boolean slave) {
 			if (!slave)
-				bindAddress = new InetSocketAddress(info.groupOwnerAddress.getHostAddress(), 8888);
+				bindAddress = new InetSocketAddress(info.groupOwnerAddress.getHostAddress(), 45000);
 			else
 				bindAddress = null;
 
@@ -331,17 +338,17 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 		public void run() {
 			// TODO Auto-generated method stub
 			try {
-				
+				while (true) {
 					serverSocket = new ServerSocket();
 					serverSocket.setReuseAddress(true);
 					
 					if (bindAddress == null)
-						bindAddress = new InetSocketAddress(localAddress, 8888);
+						bindAddress = new InetSocketAddress(localAddress, 45000);
 					
 					serverSocket.bind(bindAddress);
 					toClient = "";
 					Log.d("ServerThread", "SERVER STARTED: " + ((InetSocketAddress) bindAddress).getAddress().getHostAddress());
-					while (true) {
+					
 					client = serverSocket.accept();
 					
 					BufferedReader inFromClient = new BufferedReader(new InputStreamReader(client.getInputStream()));
@@ -350,12 +357,14 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 					String fromClient = inFromClient.readLine();
 					Log.d("From Client", fromClient);
 
-					if (fromClient.contains("synchronize")) {
+					String [] clientList = fromClient.split(":");
+					
+					if (clientList[0].equals("synchronize")) {
 						Log.d("ServerThread", fromClient);
-						String [] clientList = fromClient.split(":");
 						for (int i=1; i<clientList.length; i++) {
 							synchronized (this) {
-								networkAddresses.add(clientList[i]);
+								if (!networkAddresses.contains(clientList[i]))
+									networkAddresses.add(clientList[i]);
 							}
 						}
 					}
@@ -369,7 +378,9 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 					//Send the results back to client
 		        	outToClient.flush();
 		        	outToClient.println(toClient);
-					}
+		        	
+		        	serverSocket.close();
+				}
 		        	//serverSocket.close();
 				
 			} catch (IOException e) {
@@ -383,7 +394,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 
 	
 	private void createClientSocket(WifiP2pInfo info, String message) {
-		clientThread = new ClientThread(info.groupOwnerAddress.getHostAddress(), 8888, message);
+		clientThread = new ClientThread(info.groupOwnerAddress.getHostAddress(), 45000, message);
 		//executorService.execute(clientThread);
 		clientThread.start();
 		try {
@@ -420,14 +431,17 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 		public void run() {
 			serverThread = new ServerThread(info, slave);
 			executorService.execute(serverThread);
-			while (true) {
-				synchronizeCounter--;
-				if (!slave && (synchronizeCounter == 0)) {
-					synchronizeNodes();
-					synchronizeCounter = 50000;
-				}
-					
+			if (!slave) {
+				while (true) {
+					synchronizeCounter--;
+					if (synchronizeCounter == 0) {
+						synchronizeNodes();
+						synchronizeCounter = 50000;
+					}
+						
+				}	
 			}
+			
 		}
 		
 	}
