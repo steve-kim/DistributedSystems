@@ -122,13 +122,11 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                 			if (!serverStarted) {
                 				Log.d("STATE", "I am the MASTER! muahuaha");
                         		createServerSocket(info, false);
-                        		synchronizeNodes();
                 			}
                 		} else if (!serverStarted){
                 			createClientSocket(info, "connecting");
                 			Log.d("STATE", "Slave :~");
                 			createServerSocket(info, true);
-                			synchronizeNodes();
                 		} 
                 		
                 		//Log.d("STATE", "Synchronizing");
@@ -167,6 +165,8 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 				e.printStackTrace();
 			}
     	}
+    	
+    	Log.d("Sync", "Syncing finished");
     }
     
     public void synchronizeNodes(WifiP2pInfo info) {
@@ -347,6 +347,12 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 
 					if (fromClient.contains("synchronize")) {
 						Log.d("ServerThread", fromClient);
+						String [] clientList = fromClient.split(":");
+						for (int i=1; i<clientList.length; i++) {
+							synchronized (this) {
+								networkAddresses.add(clientList[i]);
+							}
+						}
 					}
 					else {
 						synchronized (this) {
