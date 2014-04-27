@@ -4,8 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -41,7 +41,9 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
     private String localAddress;
     private static boolean serverStarted = false;
     private static boolean connected = false;
+    private static boolean slaveConnection = false;
     private static final ExecutorService executorService = Executors.newFixedThreadPool(10);
+    private static int synchronizeCounter = 50000;
     
     private ServerThread serverThread;
 	private ClientThread clientThread;
@@ -118,25 +120,20 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                 	public void onConnectionInfoAvailable(WifiP2pInfo info) {
                 		// TODO Auto-generated method stub
                 		Log.d("STATE", "ConnectionInfo " + info.describeContents());
-                		if (info.isGroupOwner) {
-                			if (!serverStarted) {
-                				Log.d("STATE", "I am the MASTER! muahuaha");
-                        		createServerSocket(info, false);
-                			}
+                		if (info.isGroupOwner && !serverStarted) {
+                			executorService.execute(new createServerSocketThread(info, false));
                 		} else if (!serverStarted){
+                			slaveConnection = true;
                 			createClientSocket(info, "connecting");
                 			Log.d("STATE", "Slave :~");
-                			createServerSocket(info, true);
+                			executorService.execute(new createServerSocketThread(info, false));
                 		} 
-                		
-                		//Log.d("STATE", "Synchronizing");
-            			//synchronizeNodes(info);
                 		
                 	}
 				});
-                
-                synchronizeNodes();   
+                   
             }
+        
             
             
         } else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)) {
@@ -144,7 +141,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
         }
     }
     
-    public void synchronizeNodes() {
+    public synchronized void synchronizeNodes() {
     	String allAddresses = "synchronize:";
 
     	for (String network : networkAddresses)
@@ -157,6 +154,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
     	for (String network : networkAddresses) {
     		Log.d("Sync", "Sending to: " + network);
     		ClientSynchronizeThread sync = new ClientSynchronizeThread(network, 8888, allAddresses);
+    		//executorService.execute(sync);
     		sync.start();
     		try {
 				sync.join();
@@ -179,6 +177,14 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
     
     public ArrayList<WifiP2pDevice> getWifiDevices() {
     	return devices;
+    }
+    
+    public ArrayList<String> getNetworkAddresses() {
+    	return networkAddresses;
+    }
+    
+    public boolean getSlaveStatus() {
+    	return slaveConnection;
     }
     
 	class ClientThread extends Thread{
@@ -325,7 +331,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 		public void run() {
 			// TODO Auto-generated method stub
 			try {
-				while(true) {
+				
 					serverSocket = new ServerSocket();
 					serverSocket.setReuseAddress(true);
 					
@@ -335,13 +341,12 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 					serverSocket.bind(bindAddress);
 					toClient = "";
 					Log.d("ServerThread", "SERVER STARTED: " + ((InetSocketAddress) bindAddress).getAddress().getHostAddress());
-				
+					while (true) {
 					client = serverSocket.accept();
 					
 					BufferedReader inFromClient = new BufferedReader(new InputStreamReader(client.getInputStream()));
 					PrintWriter outToClient = new PrintWriter(client.getOutputStream(), true);
-					
-					//while(!inFromClient.ready()) {}
+
 					String fromClient = inFromClient.readLine();
 					Log.d("From Client", fromClient);
 
@@ -364,13 +369,13 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 					//Send the results back to client
 		        	outToClient.flush();
 		        	outToClient.println(toClient);
-		        	
-		        	serverSocket.close();
-				}				
+					}
+		        	//serverSocket.close();
+				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			} 
+			}
 		}
 
 	}
@@ -389,10 +394,42 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 		}
 	}
 
-	private void createServerSocket(WifiP2pInfo info, boolean slave) {
-		serverThread = new ServerThread(info, slave);
-		serverThread.start();
-	}
-    
+	/*private void createServerSocket(WifiP2pInfo info, boolean slave) {
+			serverThread = new ServerThread(info, slave);
+			serverThread.start();
+			try {
+				serverThread.join();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if (!slave)
+				synchronizeNodes();
+	}*/
+	
+	class createServerSocketThread implements Runnable {
+		private WifiP2pInfo info;
+		private boolean slave;
+		
+		public createServerSocketThread(WifiP2pInfo info, boolean slave) {
+			this.info = info;
+			this.slave = slave;
+		}
 
+		@Override
+		public void run() {
+			serverThread = new ServerThread(info, slave);
+			executorService.execute(serverThread);
+			while (true) {
+				synchronizeCounter--;
+				if (!slave && (synchronizeCounter == 0)) {
+					synchronizeNodes();
+					synchronizeCounter = 50000;
+				}
+					
+			}
+		}
+		
+	}
+	
 }

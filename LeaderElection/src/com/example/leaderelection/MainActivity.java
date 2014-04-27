@@ -1,30 +1,18 @@
 package com.example.leaderelection;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.ArrayList;
 
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
-import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.WifiP2pManager.ActionListener;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
-import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -40,12 +28,11 @@ public class MainActivity extends Activity {
 	static BroadcastReceiver mReceiver;
 	IntentFilter mIntentFilter;
 	private static WifiP2pConfig mConfig = new WifiP2pConfig();
+	private static boolean minDevicesConnected = false;
 	
 	private static ArrayList<WifiP2pDevice> devices = new ArrayList<WifiP2pDevice>();
 	private static Button mConnectButton;
-	
-//    private ServerThread serverThread;
-//	private ClientThread clientThread;
+	private static Button mStartRace;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -111,6 +98,7 @@ public class MainActivity extends Activity {
 					false);
 			
 			mConnectButton = (Button) rootView.findViewById(R.id.connection);
+			mStartRace = (Button) rootView.findViewById(R.id.startRace);
 			
 			mConnectButton.setOnClickListener(new View.OnClickListener() {
 
@@ -128,6 +116,7 @@ public class MainActivity extends Activity {
 				            public void onSuccess() {
 				                // WiFiDirectBroadcastReceiver will notify us. Ignore for now.
 				            	Log.d("STATE", "CONNECTION SUCCESS!");
+				            	minDevicesConnected = true;
 				            }
 	
 				            @Override
@@ -138,6 +127,21 @@ public class MainActivity extends Activity {
 					}
 				}
 				
+			});
+			
+			mStartRace.setOnClickListener(new View.OnClickListener() {
+				
+				@Override
+				public void onClick(View v) {
+					// TODO Auto-generated method stub
+					if (minDevicesConnected || ((WiFiDirectBroadcastReceiver) mReceiver).getSlaveStatus()) {
+						//We now jump to the meat of the application
+						Intent intent = new Intent(getActivity(), Leaderboard.class);
+						intent.putStringArrayListExtra("networkAddresses", (ArrayList<String>)((WiFiDirectBroadcastReceiver) mReceiver).getNetworkAddresses());
+						startActivity(intent);
+					}
+					
+				}
 			});
 			
 			return rootView;

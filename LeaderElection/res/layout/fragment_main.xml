@@ -14,5 +14,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/connection" />
+    
+    <Button
+        android:id="@+id/startRace"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/connection"
+        android:text="@string/race" />
 
 </RelativeLayout>
