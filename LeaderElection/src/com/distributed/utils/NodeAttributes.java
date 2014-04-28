@@ -25,7 +25,7 @@ public class NodeAttributes {
 
     private static final int INIT_VAL = -1;
     private static final int INIT_PRIORITY = 10000;
-    private static final int INIT_MY_PRIORITY = 3000;
+    private static final int INIT_MY_PRIORITY = 1000;
     private static final NodeAttributes singleton = new NodeAttributes();
 
     public NodeAttributes() {

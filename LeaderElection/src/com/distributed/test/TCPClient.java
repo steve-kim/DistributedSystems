@@ -38,12 +38,12 @@ public class TCPClient implements Runnable {
             ObjectOutputStream oOUT = new ObjectOutputStream(clientSocket.getOutputStream());
             oOUT.writeObject(message);
 
-            BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            String modifiedSentence = inFromServer.readLine();
-
-            if(modifiedSentence.isEmpty()){
-               System.out.println("Well the server didn't send shit back...");
-            }
+//            BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+//            String modifiedSentence = inFromServer.readLine();
+//
+//            if(modifiedSentence.isEmpty()){
+//               System.out.println("Well the server didn't send shit back...");
+//            }
             //Close the socket when finished with the transaction
             clientSocket.close();
 

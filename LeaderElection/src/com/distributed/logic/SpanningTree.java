@@ -142,6 +142,7 @@ public class SpanningTree extends Process{
                 }
                 else{
                     // Should never receive
+                    System.out.println("Wait what is going on...");
                 }
             }
             // I have a lower priority than received message, then send Elect Me & Vote Me.
@@ -161,6 +162,7 @@ public class SpanningTree extends Process{
                 }
                 else{
                     // Should never receive
+                    System.out.println("Wait what is going on again?");
                 }
             }
         }

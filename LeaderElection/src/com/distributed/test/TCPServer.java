@@ -25,11 +25,11 @@ public class TCPServer implements Runnable {
         this.port = serverPort;
         Ibuf = new byte[bufflen];
 
-        /*try {
+        try {
             welcomeSocket = new ServerSocket(port);
         } catch (IOException e) {
             e.printStackTrace();
-        }*/
+        }
     }
 
 
@@ -38,7 +38,6 @@ public class TCPServer implements Runnable {
         while (true) {
 
             try {
-            	welcomeSocket = new ServerSocket(port);
                 // Inbound
                 connectionSocket = welcomeSocket.accept();
 
@@ -50,10 +49,10 @@ public class TCPServer implements Runnable {
                         new ObjectInputStream(connectionSocket.getInputStream());
                 
                 clientRequest = (MessageFactory)inFromClient.readObject();
-
-                DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
-                outToClient.writeBytes("Yo"+ '\n');
-                outToClient.flush();
+//
+//                DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
+//                outToClient.writeBytes("Yo"+ '\n');
+//                outToClient.flush();
 
                 
 
@@ -71,7 +70,7 @@ public class TCPServer implements Runnable {
 
                 }
                 
-                welcomeSocket.close();
+
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (ClassNotFoundException e) {

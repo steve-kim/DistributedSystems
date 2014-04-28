@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="logback-android-1.1.1-2">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/LeaderElection/libs/logback-android-1.1.1-2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/LeaderElection/libs/slf4j-api-1.7.6.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
