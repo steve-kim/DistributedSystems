@@ -120,6 +120,7 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                 			createClientSocket(info);
                 			Log.d("STATE", "Slave :~");
                 		}
+//                        Call LE logic...
                 	}
 				});
             }
@@ -213,7 +214,8 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
 				
 				while(!inFromClient.ready()) {}
 				String fromClient = inFromClient.readLine();
-				
+//				Start leader election...
+
 				//Send the results back to client
 	        	outToClient.flush();
 	        	outToClient.println("World!!!!");
